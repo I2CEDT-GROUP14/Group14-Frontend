@@ -37,19 +37,19 @@ async function initializeApp() {
     try {
         // Setup event handlers for all interactive elements
         setupEventListeners();
-        
+
         // Initialize tag selection UI
         initializeTags();
-        
+
         // Fetch and render quiz cards
         await renderQuizCards();
-        
+
         // Initialize chat functionality
         initAsksChat();
 
         // Check if we have a saved quiz state (in-progress quiz) and restore it
         const hasQuizState = await loadQuizState();
-        
+
         // If there's no quiz in progress, restore the last active tab or default to home
         if (!hasQuizState) {
             const savedTab = localStorage.getItem("currentTab");
@@ -98,7 +98,7 @@ async function handleCreateQuizClick() {
 
         // Create the quiz through API
         await createQuizApi({ title, description, numQuestions, questionType, duration });
-        
+
         // Navigate to cards view and refresh
         switchTab('cards');
         await renderQuizCards();
@@ -197,26 +197,26 @@ function setupEventListeners() {
     const saveEditBtn = document.getElementById('saveEditBtn');
     const editAddTagBtn = document.getElementById('editAddTagBtn');
     const editNewTagInput = document.getElementById('editNewTag');
-    
+
     if (cancelEditBtn) cancelEditBtn.addEventListener('click', backToCards);
     if (saveEditBtn) saveEditBtn.addEventListener('click', saveQuizEdits);
-    
+
     // Edit page tag management
     if (editAddTagBtn) editAddTagBtn.addEventListener('click', addEditTag);
     if (editNewTagInput) {
-        editNewTagInput.addEventListener('keypress', function(e) {
+        editNewTagInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addEditTag();
             }
         });
     }
-    
+
     // Results page buttons
     const retryQuizBtn = document.getElementById('retryQuizBtn');
     const backToCardsBtn2 = document.getElementById('backToCardsBtn2');
     const backToCardsFromResultsBtn = document.getElementById('backToCardsFromResultsBtn');
-    
+
     if (retryQuizBtn) retryQuizBtn.addEventListener('click', () => {
         if (currentQuizId) startQuiz(currentQuizId);
     });
@@ -236,7 +236,7 @@ function initAsksChat() {
     sendBtn.addEventListener('click', async () => {
         const text = input.value.trim();
         if (!text) return;
-        
+
         // Display user message
         appendMessage('user', text);
         input.value = '';
@@ -244,7 +244,7 @@ function initAsksChat() {
 
         // Show typing indicator
         showTyping();
-        
+
         try {
             // Send to backend API and get response
             const response = await sendToBackend(text);
@@ -384,7 +384,7 @@ function switchTab(tab) {
         if (tab !== 'quiz-results') {
             localStorage.removeItem('quizState');
             localStorage.removeItem('currentQuizData');
-            
+
             // Stop timer if it exists
             if (timer) {
                 clearInterval(timer);
@@ -392,7 +392,7 @@ function switchTab(tab) {
             }
         }
     }
-    
+
     currentTab = tab;
 
     localStorage.setItem("currentTab", tab);
@@ -453,27 +453,27 @@ async function initializeEditTags() {
     if (!container) return;
 
     container.innerHTML = '';
-    
+
     try {
         const tags = await getTags();
         availableTags = tags;
-        
+
         tags.forEach(tag => {
             // Create tag element - it checks selectedTags in its constructor
             const tagElement = createEditTagElement(tag.name, tag._id);
             container.appendChild(tagElement);
         });
-        
+
         // Add event listener for the add tag button
         const addTagBtn = document.getElementById('editAddTagBtn');
         const newTagInput = document.getElementById('editNewTag');
-        
+
         if (addTagBtn) {
             addTagBtn.addEventListener('click', addEditTag);
         }
-        
+
         if (newTagInput) {
-            newTagInput.addEventListener('keypress', function(e) {
+            newTagInput.addEventListener('keypress', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     addEditTag();
@@ -529,7 +529,7 @@ function createTagElement(tagText, tagId) {
 function createEditTagElement(tagText, tagId) {
     const tag = document.createElement('span');
     tag.className = 'tag';
-    
+
     // Check if this tag is in the selectedTags array and mark it as selected
     if (selectedTags.includes(tagText)) {
         tag.classList.add('selected');
@@ -540,7 +540,7 @@ function createEditTagElement(tagText, tagId) {
     `;
 
     // Toggle tag selection
-    tag.addEventListener('click', function() {
+    tag.addEventListener('click', function () {
         toggleEditTag(tagText);
     });
 
@@ -570,7 +570,7 @@ function toggleEditTag(tagText) {
             }
         }
     });
-    
+
     console.log('Selected tags:', selectedTags);
 }
 
@@ -609,12 +609,12 @@ async function addTag() {
 async function addEditTag() {
     const newTagInput = document.getElementById('editNewTag');
     const newTag = newTagInput.value.trim();
-    
+
     if (!newTag) return;
-    
+
     try {
         await createTag(newTag);
-        
+
         if (!availableTags.includes(newTag) && !selectedTags.includes(newTag)) {
             availableTags.push(newTag);
             selectedTags.push(newTag);
@@ -713,6 +713,7 @@ async function renderQuizCards() {
     container.innerHTML = '';
 
     const data = await getQuizCards();
+    quizCards = data.slice();
     console.log('Fetched quiz cards:', data);
 
     data.forEach(card => {
@@ -877,55 +878,51 @@ function createQuizCardElement(card) {
 }
 
 function filterQuizCards() {
-    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
-    const filterValue = document.getElementById('filterSelect').value;
+    const searchEl = document.getElementById('searchInput') || document.querySelector('.search-input');
+    const filterEl = document.getElementById('filterSelect') || document.querySelector('.filter-select');
 
-    let filteredCards = quizCards;
+    const searchQuery = (searchEl?.value || '').toLowerCase();
+    const filterValue = (filterEl?.value || 'all');
 
-    // Apply search filter
+    let filteredCards = quizCards.slice();
+
     if (searchQuery) {
         filteredCards = filteredCards.filter(card =>
-            card.name.toLowerCase().includes(searchQuery) ||
-            card.tags.some(tag => tag.toLowerCase().includes(searchQuery))
+            (card.title || '').toLowerCase().includes(searchQuery) ||
+            (Array.isArray(card.tags) && card.tags.some(t => (t || '').toLowerCase().includes(searchQuery)))
         );
     }
 
-    // Apply category filter
     if (filterValue && filterValue !== 'all') {
         switch (filterValue) {
             case 'high-score':
-                filteredCards = filteredCards.filter(card => card.score >= 80);
+                filteredCards = filteredCards.filter(c => {
+                    const pct = c.questionCount ? (c.score / c.questionCount) : 0;
+                    return pct >= 0.8; // >=80%
+                });
                 break;
             case 'multiple-choice':
-                filteredCards = filteredCards.filter(card => card.choiceType === 'Multiple Choice');
+                filteredCards = filteredCards.filter(c => c.choiceType === 'Multiple Choice');
                 break;
-            case 'short-answer':
-                filteredCards = filteredCards.filter(card => card.choiceType === 'Short Answer');
-                break;
-            case 'essay':
-                filteredCards = filteredCards.filter(card => card.choiceType === 'Essay');
+            case 'true-false':
+                filteredCards = filteredCards.filter(c => c.choiceType === 'True/False');
                 break;
         }
     }
 
-    // Render filtered cards
     const container = document.getElementById('quizCardsContainer');
     const noResultsMsg = document.getElementById('noQuizzesMessage');
+    if (!container) return;
 
-    if (container) {
-        container.innerHTML = '';
-
-        if (filteredCards.length === 0) {
-            noResultsMsg.style.display = 'block';
-        } else {
-            noResultsMsg.style.display = 'none';
-            filteredCards.forEach(card => {
-                const cardElement = createQuizCardElement(card);
-                container.appendChild(cardElement);
-            });
-        }
+    container.innerHTML = '';
+    if (filteredCards.length === 0) {
+        if (noResultsMsg) noResultsMsg.style.display = 'block';
+    } else {
+        if (noResultsMsg) noResultsMsg.style.display = 'none';
+        filteredCards.forEach(card => container.appendChild(createQuizCardElement(card)));
     }
 }
+
 
 // ===== Quiz Taking Functions =====
 /**
@@ -942,34 +939,34 @@ async function startQuiz(quizId) {
     try {
         // Get quiz data by ID from API
         const data = await getQuizById(quizId);
-        
+
         // Store the quiz data
         quizData[quizId] = data;
         currentQuiz = data;
-        
+
         console.log('Quiz loaded:', currentQuiz);
-        
+
         if (!currentQuiz) {
             alert('Failed to load quiz data');
             return;
         }
-        
+
         // Initialize timer
         timeRemaining = currentQuiz.duration * 60; // Convert minutes to seconds
-        
+
         // Update UI
         document.getElementById('quizTitle').textContent = currentQuiz.title;
         document.getElementById('quizChoiceType').textContent = currentQuiz.choiceType;
-        
+
         // Set total questions
         document.getElementById('totalQuestions').textContent = currentQuiz.questions.length;
-        
+
         // Save quiz state to localStorage
         saveQuizState();
-        
+
         switchTab('quiz-taking');
         displayQuestion();
-        
+
         // Only start timer if duration is not unlimited (0)
         if (currentQuiz.duration > 0) {
             startTimer();
@@ -1023,11 +1020,11 @@ function displayQuestion() {
         button.dataset.value = option;
 
         if (selectedAnswer === option) button.classList.add('selected');
-        
-        button.addEventListener('click', function() { 
-            selectAnswer(quiz._id, question._id, option); 
+
+        button.addEventListener('click', function () {
+            selectAnswer(quiz._id, question._id, option);
         });
-        
+
         container.appendChild(button);
     });
     // Update navigation buttons
@@ -1051,7 +1048,7 @@ function selectAnswer(quizId, questionId, answer) {
     // Key is questionId, value is the answer text
     userAnswers[questionId] = answer;
     selectedAnswer = answer;
-    
+
     console.log('Answer selected:', questionId, answer);
     console.log('User answers:', userAnswers);
 
@@ -1064,7 +1061,7 @@ function selectAnswer(quizId, questionId, answer) {
             opt.classList.add('selected');
         }
     });
-    
+
     // Save quiz state to localStorage
     saveQuizState();
 }
@@ -1095,7 +1092,7 @@ async function saveQuizState() {
             timeRemaining: timeRemaining
         };
         localStorage.setItem('quizState', JSON.stringify(quizState));
-        
+
         // Also save the quiz data itself for restoration
         if (quizData[currentQuizId]) {
             localStorage.setItem('currentQuizData', JSON.stringify(quizData[currentQuizId]));
@@ -1107,38 +1104,38 @@ async function saveQuizState() {
 async function loadQuizState() {
     const quizStateStr = localStorage.getItem('quizState');
     if (!quizStateStr) return false;
-    
+
     try {
         const quizState = JSON.parse(quizStateStr);
-        
+
         // Set the state variables
         currentQuizId = quizState.quizId;
         currentQuestionIndex = quizState.questionIndex;
         userAnswers = quizState.userAnswers || {};
         timeRemaining = quizState.timeRemaining;
-        
+
         // Load quiz data if available in localStorage
         const quizDataStr = localStorage.getItem('currentQuizData');
         if (quizDataStr) {
             const loadedQuizData = JSON.parse(quizDataStr);
             quizData[currentQuizId] = loadedQuizData;
             currentQuiz = loadedQuizData;
-            
+
             // Switch to quiz taking tab and display question
             switchTab('quiz-taking');
-            
+
             // Update UI
             document.getElementById('quizTitle').textContent = currentQuiz.title;
             document.getElementById('quizChoiceType').textContent = currentQuiz.choiceType;
             document.getElementById('totalQuestions').textContent = currentQuiz.questions.length;
-            
+
             displayQuestion();
-            
+
             // Start timer if needed
             if (currentQuiz.duration > 0 && timeRemaining > 0) {
                 startTimer();
             }
-            
+
             return true;
         } else {
             // If we have quizId but not the data, fetch it again
@@ -1154,18 +1151,18 @@ async function submitQuiz() {
     // Clear saved quiz state when submitting
     localStorage.removeItem('quizState');
     localStorage.removeItem('currentQuizData');
-    
+
     if (timer) {
         clearInterval(timer);
     }
-    
+
     try {
         if (!currentQuizId) {
             console.error('No quiz ID found for submission');
             alert('Error submitting quiz: Quiz ID not found');
             return;
         }
-        
+
         // Format answers for submission
         const quiz = quizData[currentQuizId];
         if (!quiz) {
@@ -1173,7 +1170,7 @@ async function submitQuiz() {
             alert('Error submitting quiz: Quiz data not found');
             return;
         }
-        
+
         // Create submission format as per API schema
         const answers = Object.keys(userAnswers).map(questionId => {
             return {
@@ -1181,7 +1178,7 @@ async function submitQuiz() {
                 userAnswer: userAnswers[questionId]
             };
         });
-        
+
         // Check if all questions are answered
         if (answers.length < quiz.questions.length) {
             const confirmSubmit = confirm(`You've only answered ${answers.length} out of ${quiz.questions.length} questions. Submit anyway?`);
@@ -1190,9 +1187,9 @@ async function submitQuiz() {
                 return;
             }
         }
-        
+
         console.log('Submitting quiz:', { quizId: currentQuizId, answers });
-        
+
         // Submit to API
         try {
             const response = await fetch(`${apiUrl}/quiz/submit/${currentQuizId}`, {
@@ -1202,21 +1199,21 @@ async function submitQuiz() {
                 },
                 body: JSON.stringify({ answers })
             });
-            
+
             const result = await response.json();
-            
+
             if (response.ok) {
                 console.log('Quiz submission result:', result);
-                
+
                 // Store the quiz results
                 answerData = result;
-                
+
                 // Process the result to include isAnswerCorrect for each question
                 const processedResult = processQuizResult(quiz, userAnswers, result);
-                
+
                 // Show the results page
                 displayQuizResults(quiz, processedResult);
-                
+
                 // Update the quiz card with new score if available
                 renderQuizCards(); // Refresh quiz cards in the background
             } else {
@@ -1242,19 +1239,22 @@ function processQuizResult(quiz, userAnswers, apiResult) {
     if (apiResult.questions && apiResult.questions.length > 0 && apiResult.questions[0].hasOwnProperty('isAnswerCorrect')) {
         return apiResult;
     }
-    
+
     // Otherwise, build our own result object with correctness data
     const processedResult = {
         score: apiResult.score || 0,
         questions: []
     };
-    
+
     // Process each question to determine correctness
     quiz.questions.forEach(question => {
         const userAnswer = userAnswers[question._id] || '';
-        const correctAnswer = question.options[question.answer] || '';
+        const correctAnswer =
+            typeof question.answer === 'number'
+                ? (question.options[question.answer] ?? '')
+                : (question.answer ?? '');
         const isCorrect = userAnswer === correctAnswer;
-        
+
         processedResult.questions.push({
             _id: question._id,
             question: question.question,
@@ -1263,12 +1263,12 @@ function processQuizResult(quiz, userAnswers, apiResult) {
             isAnswerCorrect: isCorrect
         });
     });
-    
+
     // If API didn't provide a score, calculate it
     if (!apiResult.score) {
         processedResult.score = processedResult.questions.filter(q => q.isAnswerCorrect).length;
     }
-    
+
     return processedResult;
 }
 
@@ -1303,29 +1303,32 @@ function backToCards() {
 function displayQuizResults(quiz, result) {
     // Set the quiz title in the results page
     document.getElementById('resultsQuizTitle').textContent = quiz.title;
-    
+
     // Calculate and display the score
     const correctCount = result.score || 0;
     const totalQuestions = quiz.questions.length;
     const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
-    
+
     document.getElementById('resultsQuizScore').textContent = `Score: ${correctCount}/${totalQuestions}`;
     document.getElementById('scorePercentage').textContent = `${scorePercentage}%`;
-    
+
     // Get the container for displaying questions
     const questionsContainer = document.getElementById('resultsQuestionsContainer');
     questionsContainer.innerHTML = ''; // Clear previous results
-    
+
     // Display each question with correctness
     quiz.questions.forEach((question, index) => {
         const userAnswer = userAnswers[question._id] || '';
         const isCorrect = result.questions.find(q => q._id === question._id)?.isAnswerCorrect || false;
-        const correctAnswer = question.options[question.answer] || '';
-        
+        const correctAnswer =
+            typeof question.answer === 'number'
+                ? (question.options[question.answer] ?? '')
+                : (question.answer ?? '');
+
         // Create question card
         const questionCard = document.createElement('div');
         questionCard.className = 'result-question-card';
-        
+
         // Question header with number and status
         const questionHeader = document.createElement('div');
         questionHeader.className = 'result-question-header';
@@ -1333,43 +1336,43 @@ function displayQuizResults(quiz, result) {
             <div class="result-question-number">Question ${index + 1}</div>
             <div class="result-status ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? 'Correct' : 'Incorrect'}</div>
         `;
-        
+
         // Question content with text and answers
         const questionContent = document.createElement('div');
         questionContent.className = 'result-question-content';
-        
+
         // Question text
         const questionText = document.createElement('div');
         questionText.className = 'result-question-text';
         questionText.textContent = question.question;
-        
+
         // Answers container
         const answersContainer = document.createElement('div');
         answersContainer.className = 'result-answers';
-        
+
         // Add each answer option
         question.options.forEach((option, optIndex) => {
             const isUserSelected = option === userAnswer;
             const isCorrectOption = option === correctAnswer;
-            
+
             const answerDiv = document.createElement('div');
             answerDiv.className = 'result-answer';
             if (isUserSelected) answerDiv.classList.add('user-selected');
             if (isCorrectOption) answerDiv.classList.add('correct-answer');
-            
+
             // Letter (A, B, C, etc.)
             const letterSpan = document.createElement('span');
             letterSpan.className = 'result-answer-letter';
             letterSpan.textContent = String.fromCharCode(65 + optIndex);
-            
+
             // Answer text
             const textSpan = document.createElement('span');
             textSpan.textContent = option;
-            
+
             // Icon for correct/incorrect
             const iconSpan = document.createElement('span');
             iconSpan.className = 'result-answer-icon';
-            
+
             if (isUserSelected) {
                 if (isCorrect) {
                     iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
@@ -1390,43 +1393,43 @@ function displayQuizResults(quiz, result) {
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>`;
             }
-            
+
             answerDiv.appendChild(letterSpan);
             answerDiv.appendChild(textSpan);
             answerDiv.appendChild(iconSpan);
             answersContainer.appendChild(answerDiv);
         });
-        
+
         // Assemble the question card
         questionContent.appendChild(questionText);
         questionContent.appendChild(answersContainer);
-        
+
         questionCard.appendChild(questionHeader);
         questionCard.appendChild(questionContent);
-        
+
         // Add to the results container
         questionsContainer.appendChild(questionCard);
     });
-    
+
     // Setup event listeners for the buttons in the results page
     const retryBtn = document.getElementById('retryQuizBtn');
     const backToCardsBtn = document.getElementById('backToCardsBtn2');
     const backFromResultsBtn = document.getElementById('backToCardsFromResultsBtn');
-    
+
     if (retryBtn) {
         retryBtn.onclick = () => {
             startQuiz(currentQuizId);
         };
     }
-    
+
     if (backToCardsBtn) {
         backToCardsBtn.onclick = backToCards;
     }
-    
+
     if (backFromResultsBtn) {
         backFromResultsBtn.onclick = backToCards;
     }
-    
+
     // Switch to the results page
     switchTab('quiz-results');
 }
@@ -1450,7 +1453,7 @@ function startTimer() {
         if (timeRemaining < 300) { // 5 minutes
             timerElement.parentElement.classList.add('warning');
         }
-        
+
         // Update localStorage every 15 seconds to save timer state
         if (timeRemaining % 15 === 0) {
             saveQuizState();
@@ -1477,7 +1480,7 @@ function editViaHome(quizId) {
 
     // Get quiz data - first try to get it from quizData
     let q = quizData[quizId];
-    
+
     // If not available, find it from quizCards
     if (!q) {
         const card = quizCards.find(c => c._id === quizId);
@@ -1496,7 +1499,7 @@ function editViaHome(quizId) {
     const createBtn = document.getElementById('createQuizBtn');
 
     if (quizNameEl) quizNameEl.value = q.title || '';
-    if (quizDetailsEl) quizDetailsEl.value = q.description || ''; 
+    if (quizDetailsEl) quizDetailsEl.value = q.description || '';
     if (durationEl) durationEl.value = String(q.duration);
     if (numQuestionsEl) numQuestionsEl.value = String(q.questionCount);
     if (choiceTypeEl) choiceTypeEl.value = q.choiceType === 'Multiple Choice' ? 'multiple' : 'true-false';
@@ -1516,7 +1519,7 @@ function editViaHome(quizId) {
 
 async function openEditQuiz(quizId) {
     currentQuizId = quizId;
-    
+
     // Try to get quiz data, if not already loaded, fetch it
     let q = quizData[quizId];
     if (!q) {
@@ -1529,7 +1532,7 @@ async function openEditQuiz(quizId) {
             return;
         }
     }
-    
+
     if (!q) {
         alert('Quiz data not found');
         return;
@@ -1545,7 +1548,7 @@ async function openEditQuiz(quizId) {
 
     if (nameEl) nameEl.value = q.title || '';
     if (descriptionEl) descriptionEl.value = q.description || '';
-    
+
     // Set the dropdown values
     if (durEl) {
         if (q.duration === 0) {
@@ -1553,23 +1556,23 @@ async function openEditQuiz(quizId) {
         } else {
             // Find closest duration option
             const durations = [5, 10, 15, 30, 60];
-            let closestDuration = durations.reduce((prev, curr) => 
+            let closestDuration = durations.reduce((prev, curr) =>
                 Math.abs(curr - q.duration) < Math.abs(prev - q.duration) ? curr : prev
             );
             durEl.value = closestDuration;
         }
     }
-    
+
     if (totalEl) {
         // Find closest question count option
         const questionCounts = [5, 10, 15, 20, 25, 50];
-        let closestCount = questionCounts.reduce((prev, curr) => 
+        let closestCount = questionCounts.reduce((prev, curr) =>
             Math.abs(curr - q.questionCount) < Math.abs(prev - q.questionCount) ? curr : prev
         );
         totalEl.value = closestCount;
     }
 
-    
+
     if (typeEl) {
         if (q.choiceType === 'Multiple Choice') {
             typeEl.value = 'multiple-choice';
@@ -1577,16 +1580,16 @@ async function openEditQuiz(quizId) {
             typeEl.value = 'true-false';
         }
     }
-    
+
     if (regenerateCheckbox) regenerateCheckbox.checked = false; // Default to not regenerate
 
     // Handle tags - get tags from the card first
     const card = quizCards.find(c => c._id === quizId);
     selectedTags = card && card.tags ? [...card.tags] : [];
-    
+
     // Initialize tags, this will create all tag elements
     await initializeEditTags();
-    
+
     // After initializing tags, update the UI to show selected tags
     const tagElements = document.querySelectorAll('#editTagsContainer .tag');
     tagElements.forEach(tag => {
@@ -1595,7 +1598,7 @@ async function openEditQuiz(quizId) {
             tag.classList.add('selected');
         }
     });
-    
+
     switchTab('quiz-edit');
 }
 
@@ -1613,7 +1616,7 @@ async function saveQuizEdits() {
     // Get the updated values
     const updatedTitle = nameEl.value.trim() || q.title;
     const updatedDescription = descriptionEl ? descriptionEl.value.trim() : (q.description || '');
-    
+
     // Handle duration (could be "unlimited")
     let updatedDuration;
     if (durEl.value === 'unlimited') {
@@ -1621,9 +1624,9 @@ async function saveQuizEdits() {
     } else {
         updatedDuration = parseInt(durEl.value, 10) || q.duration;
     }
-    
+
     const updatedNumQuestions = parseInt(totalEl.value, 10) || q.questionCount;
-    
+
     // Convert the choice type from dropdown value to API expected value
     let updatedChoiceType;
     if (typeEl.value === 'multiple-choice') {
@@ -1633,9 +1636,9 @@ async function saveQuizEdits() {
     } else {
         updatedChoiceType = q.choiceType === 'Multiple Choice' ? 'multiple' : 'true-false';
     }
-    
+
     const shouldRegenerate = regenerateCheckbox && regenerateCheckbox.checked;
-    
+
     // Show loading state
     const saveBtn = document.getElementById('saveEditBtn');
     if (saveBtn) {

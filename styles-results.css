@@ -149,20 +149,20 @@
   .quiz-header-section {
     padding: 16px 16px 0 16px;
   }
-  
+
   .results-questions-container {
     padding: 0 16px;
   }
-  
+
   .navigation-buttons {
     padding: 0 16px 16px 16px;
   }
-  
+
   .results-score-card {
     padding: 16px;
     min-width: 150px;
   }
-  
+
   .score-percentage {
     font-size: 36px;
   }
