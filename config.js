@@ -1,2 +1,2 @@
-const apiUrl = "https://cedt-backend-dev.rachatat.com";
+const apiUrl = "https://cedt-backend-prod.rachatat.com";
 export { apiUrl };
