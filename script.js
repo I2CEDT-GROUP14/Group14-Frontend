@@ -1040,9 +1040,9 @@ function displayQuestion() {
     // ตรวจสอบให้แน่ใจว่ามีอย่างน้อย 4 ช้อย
     let options = [...(question.options || [])]; // กัน null/undefined
 
-    while (options.length < 4) {
-        options.push(`ตัวเลือกที่ ${options.length + 1}`);
-    }
+    // while (options.length < 4) {
+    //     options.push(`ตัวเลือกที่ ${options.length + 1}`);
+    // }
 
     // Render answer options
     options.forEach((option, index) => {
@@ -1773,3 +1773,4 @@ export {
     startQuiz,
     backToCards
 };
+
