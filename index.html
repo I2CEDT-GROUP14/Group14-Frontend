@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CHOYZZZ</title>
+    <title>AI Flashcards</title>
     <link
       rel="icon"
       href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><text y=".9em" font-size="96">📚</text></svg>'
@@ -28,7 +28,7 @@
       <!-- Sidebar -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-          <h1>CHOYZZZ</h1>
+          <h1>AI Flashcards</h1>
         </div>
         <nav class="sidebar-nav">
           <button class="nav-item active" data-tab="home">
@@ -332,6 +332,7 @@
                     <option value="high-score">High Score (80+)</option>
                     <option value="recent">Recently Created</option>
                     <option value="multiple-choice">Multiple Choice</option>
+                    <option value="true-false">True / False</option>
                     <!-- <option value="short-answer">Short Answer</option>
                     <option value="essay">Essay</option> -->
                   </select>
@@ -656,7 +657,7 @@
                         </button>
                       </div>
                     </div>
-                    
+
                     <div class="form-group">
                       <label for="regenerateQuiz">
                         <input type="checkbox" id="regenerateQuiz" />
@@ -669,9 +670,7 @@
 
               <!-- Create Button -->
               <div class="creator-footer">
-                <button id="cancelEditBtn" class="btn-outline">
-                  Cancel
-                </button>
+                <button id="cancelEditBtn" class="btn-outline">Cancel</button>
                 <button type="button" id="saveEditBtn" class="btn-primary">
                   Save Changes
                 </button>
@@ -723,14 +722,15 @@
                 </div>
               </div>
 
-              <div class="results-questions-container" id="resultsQuestionsContainer">
+              <div
+                class="results-questions-container"
+                id="resultsQuestionsContainer"
+              >
                 <!-- Questions with answers will be populated here -->
               </div>
-              
+
               <div class="navigation-buttons">
-                <button id="retryQuizBtn" class="btn-outline">
-                  Try Again
-                </button>
+                <button id="retryQuizBtn" class="btn-outline">Try Again</button>
                 <div class="nav-right">
                   <button id="backToCardsBtn2" class="btn-primary">
                     Back to Cards
@@ -777,4 +777,3 @@
     <script src="api.js" type="module"></script>
   </body>
 </html>
-

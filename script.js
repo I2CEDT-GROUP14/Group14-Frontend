@@ -865,10 +865,7 @@ function createQuizCardElement(card) {
                 return;
             }
 
-            // รีเฟรชการ์ดบนหน้าจอ
-            // if (typeof renderQuizCards === 'function') {
-            //     renderQuizCards();
-            // }
+
 
             if (dropdown) dropdown.style.display = 'none';
         });
@@ -882,46 +879,59 @@ function filterQuizCards() {
     const filterEl = document.getElementById('filterSelect') || document.querySelector('.filter-select');
 
     const searchQuery = (searchEl?.value || '').toLowerCase();
-    const filterValue = (filterEl?.value || 'all');
+    const filterValue = (filterEl?.value || 'all').toLowerCase();
 
-    let filteredCards = quizCards.slice();
+    const norm = (s) =>
+        (s || '')
+            .toString()
+            .toLowerCase()
+            .replace(/\s|_/g, '-')
+            .replace('true/false', 'true-false');
+
+    let filtered = quizCards.slice();
 
     if (searchQuery) {
-        filteredCards = filteredCards.filter(card =>
-            (card.title || '').toLowerCase().includes(searchQuery) ||
-            (Array.isArray(card.tags) && card.tags.some(t => (t || '').toLowerCase().includes(searchQuery)))
+        filtered = filtered.filter(c =>
+            (c.title || '').toLowerCase().includes(searchQuery) ||
+            (Array.isArray(c.tags) && c.tags.some(t => (t || '').toLowerCase().includes(searchQuery)))
         );
     }
 
-    if (filterValue && filterValue !== 'all') {
+    if (filterValue !== 'all') {
         switch (filterValue) {
-            case 'high-score':
-                filteredCards = filteredCards.filter(c => {
-                    const pct = c.questionCount ? (c.score / c.questionCount) : 0;
-                    return pct >= 0.8; // >=80%
-                });
-                break;
             case 'multiple-choice':
-                filteredCards = filteredCards.filter(c => c.choiceType === 'Multiple Choice');
+                filtered = filtered.filter(c =>
+                    ['choiceType', 'questionType', 'type'].some(k => norm(c[k]) === 'multiple-choice')
+                );
                 break;
+
             case 'true-false':
-                filteredCards = filteredCards.filter(c => c.choiceType === 'True/False');
+                filtered = filtered.filter(c =>
+                    ['choiceType', 'questionType', 'type'].some(k => norm(c[k]) === 'true-false')
+                );
+                break;
+
+            case 'high-score':
+                filtered = filtered.filter(c => {
+                    const pct = c.questionCount ? (c.score / c.questionCount) : 0;
+                    return pct >= 0.8;
+                });
                 break;
         }
     }
 
     const container = document.getElementById('quizCardsContainer');
-    const noResultsMsg = document.getElementById('noQuizzesMessage');
-    if (!container) return;
-
+    const noResults = document.getElementById('noQuizzesMessage');
     container.innerHTML = '';
-    if (filteredCards.length === 0) {
-        if (noResultsMsg) noResultsMsg.style.display = 'block';
+
+    if (filtered.length === 0) {
+        if (noResults) noResults.style.display = 'block';
     } else {
-        if (noResultsMsg) noResultsMsg.style.display = 'none';
-        filteredCards.forEach(card => container.appendChild(createQuizCardElement(card)));
+        if (noResults) noResults.style.display = 'none';
+        filtered.forEach(card => container.appendChild(createQuizCardElement(card)));
     }
 }
+
 
 
 // ===== Quiz Taking Functions =====
@@ -1009,8 +1019,33 @@ function displayQuestion() {
     console.log('Displaying question:', question);
     console.log('Current selected answer:', selectedAnswer);
 
+    // // Render answer options
+    // question.options.forEach((option, index) => {
+    //     const button = document.createElement('button');
+    //     button.className = 'answer-option';
+    //     button.innerHTML = `
+    //         <span class="answer-letter">${String.fromCharCode(65 + index)}</span>
+    //         ${option}
+    //     `;
+    //     button.dataset.value = option;
+
+    //     if (selectedAnswer === option) button.classList.add('selected');
+
+    //     button.addEventListener('click', function () {
+    //         selectAnswer(quiz._id, question._id, option);
+    //     });
+
+    //     container.appendChild(button);
+    // });
+    // ตรวจสอบให้แน่ใจว่ามีอย่างน้อย 4 ช้อย
+    let options = [...(question.options || [])]; // กัน null/undefined
+
+    while (options.length < 4) {
+        options.push(`ตัวเลือกที่ ${options.length + 1}`);
+    }
+
     // Render answer options
-    question.options.forEach((option, index) => {
+    options.forEach((option, index) => {
         const button = document.createElement('button');
         button.className = 'answer-option';
         button.innerHTML = `
@@ -1027,6 +1062,7 @@ function displayQuestion() {
 
         container.appendChild(button);
     });
+
     // Update navigation buttons
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -1301,6 +1337,9 @@ function backToCards() {
  * @param {Object} result - The quiz result containing score and question results
  */
 function displayQuizResults(quiz, result) {
+    // ==== helper เล็ก ๆ เพื่อให้เทียบข้อความแม่นขึ้น ====
+    const norm = (s) => (s ?? '').toString().trim().toLowerCase();
+
     // Set the quiz title in the results page
     document.getElementById('resultsQuizTitle').textContent = quiz.title;
 
@@ -1318,12 +1357,18 @@ function displayQuizResults(quiz, result) {
 
     // Display each question with correctness
     quiz.questions.forEach((question, index) => {
-        const userAnswer = userAnswers[question._id] || '';
-        const isCorrect = result.questions.find(q => q._id === question._id)?.isAnswerCorrect || false;
-        const correctAnswer =
+        // --- เดิมใช้ตรง ๆ; เพิ่ม normalize ให้กันช่องว่าง/ตัวพิมพ์ ---
+        const rawUserAnswer = userAnswers[question._id] || '';
+        const userAnswer = norm(rawUserAnswer);
+
+        const isCorrect = !!(result.questions.find(q => q._id === question._id)?.isAnswerCorrect);
+
+        const rawCorrectAnswer =
             typeof question.answer === 'number'
                 ? (question.options[question.answer] ?? '')
                 : (question.answer ?? '');
+
+        const correctAnswer = norm(rawCorrectAnswer);
 
         // Create question card
         const questionCard = document.createElement('div');
@@ -1352,13 +1397,19 @@ function displayQuizResults(quiz, result) {
 
         // Add each answer option
         question.options.forEach((option, optIndex) => {
-            const isUserSelected = option === userAnswer;
-            const isCorrectOption = option === correctAnswer;
+            const optionNorm = norm(option);
+            const isUserSelected = optionNorm === userAnswer;
+            const isCorrectOption = optionNorm === correctAnswer;
 
             const answerDiv = document.createElement('div');
             answerDiv.className = 'result-answer';
+
             if (isUserSelected) answerDiv.classList.add('user-selected');
-            if (isCorrectOption) answerDiv.classList.add('correct-answer');
+
+            // ✅ แสดงเฉลย (ไฮไลต์สีเขียว) เฉพาะเมื่อ "ตอบผิด" หรือ "ไม่ได้ตอบ"
+            if (isCorrectOption && !isCorrect) {
+                answerDiv.classList.add('correct-answer');
+            }
 
             // Letter (A, B, C, etc.)
             const letterSpan = document.createElement('span');
@@ -1373,25 +1424,29 @@ function displayQuizResults(quiz, result) {
             const iconSpan = document.createElement('span');
             iconSpan.className = 'result-answer-icon';
 
+            // แสดงไอคอนที่ตัวเลือกผู้ใช้เลือก
             if (isUserSelected) {
                 if (isCorrect) {
-                    iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
+                    iconSpan.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>`;
+                } else {
+                    iconSpan.innerHTML = `
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="incorrect-icon">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>`;
+                }
+            } else if (isCorrectOption && !isCorrect) {
+                // ถ้าตอบผิดหรือไม่ได้ตอบ ให้ใส่ไอคอนเช็คที่คำตอบที่ถูก
+                iconSpan.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                     </svg>`;
-                } else {
-                    iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="incorrect-icon">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                    </svg>`;
-                }
-            } else if (isCorrectOption && !isCorrect) {
-                // Highlight the correct answer when user selected wrong
-                iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>`;
             }
 
             answerDiv.appendChild(letterSpan);
@@ -1574,10 +1629,27 @@ async function openEditQuiz(quizId) {
 
 
     if (typeEl) {
-        if (q.choiceType === 'Multiple Choice') {
+        const raw =
+            (q.choiceType ?? q.questionType ?? q.type ?? '')
+                .toString()
+                .trim()
+                .toLowerCase()
+                .replace(/[_\s]/g, '-');
+
+        if (raw.includes('multiple')) {
             typeEl.value = 'multiple-choice';
-        } else {
+        } else if (
+            raw.includes('true-false') ||
+            raw.includes('true/false') ||
+            raw === 'tf' ||
+            raw.includes('boolean') ||
+            raw.includes('true')
+        ) {
             typeEl.value = 'true-false';
+        } else {
+
+            typeEl.value =
+                typeEl.querySelector('option[value="multiple-choice"]') ? 'multiple-choice' : (typeEl.options[0]?.value ?? '');
         }
     }
 
@@ -1630,11 +1702,11 @@ async function saveQuizEdits() {
     // Convert the choice type from dropdown value to API expected value
     let updatedChoiceType;
     if (typeEl.value === 'multiple-choice') {
-        updatedChoiceType = 'multiple';
+        updatedChoiceType = 'multiple-choice';
     } else if (typeEl.value === 'true-false') {
         updatedChoiceType = 'true-false';
     } else {
-        updatedChoiceType = q.choiceType === 'Multiple Choice' ? 'multiple' : 'true-false';
+        updatedChoiceType = q.choiceType === 'Multiple Choice' ? 'multiple-choice' : 'true-false';
     }
 
     const shouldRegenerate = regenerateCheckbox && regenerateCheckbox.checked;

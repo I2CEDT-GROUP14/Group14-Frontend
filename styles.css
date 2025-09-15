@@ -12,7 +12,8 @@ body {
   /* font-family: "Nunito", sans-serif; */
 
   /* font-family: "Cutive Mono", monospace; */
-  font-family: "Space Mono", monospace;
+  /* font-family: "Space Mono", monospace; */
+  font-family: "Space Mono", "Noto Sans Thai", monospace;
   font-weight: 400;
   font-style: normal;
 
@@ -47,7 +48,6 @@ body {
 .sidebar-header {
   padding: 15px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  text-align: center;
 }
 
 .sidebar-header h1 {
@@ -850,7 +850,7 @@ textarea:focus {
 }
 
 .quiz-card-play:hover {
-  background-color: #16a34a;
+  background-color: #778a4f;
 }
 
 /* No Results */
@@ -1324,4 +1324,3 @@ textarea:focus {
 .content {
   background: #fff;
 }
-
