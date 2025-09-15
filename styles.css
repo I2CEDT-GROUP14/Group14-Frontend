@@ -48,6 +48,7 @@ body {
 .sidebar-header {
   padding: 15px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  text-align: center;
 }
 
 .sidebar-header h1 {
@@ -1324,3 +1325,4 @@ textarea:focus {
 .content {
   background: #fff;
 }
+
