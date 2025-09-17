@@ -1389,7 +1389,7 @@ function displayQuizResults(quiz, result) {
         // Question text
         const questionText = document.createElement('div');
         questionText.className = 'result-question-text';
-        questionText.textContent = question.question;
+        questionText.innerHTML = question.question;
 
         // Answers container
         const answersContainer = document.createElement('div');
@@ -1418,7 +1418,7 @@ function displayQuizResults(quiz, result) {
 
             // Answer text
             const textSpan = document.createElement('span');
-            textSpan.textContent = option;
+            textSpan.innerHTML = option;
 
             // Icon for correct/incorrect
             const iconSpan = document.createElement('span');
