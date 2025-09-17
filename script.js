@@ -1386,7 +1386,8 @@ function displayQuizResults(quiz, result) {
         // Add each answer option
         question.options.forEach((option, optIndex) => {
             const isUserSelected = option === userAnswer;
-            const isCorrectOption = option === correctAnswer;
+            // const isCorrectOption = option === correctAnswer;
+            const isCorrectOption = false;
             
             const answerDiv = document.createElement('div');
             answerDiv.className = 'result-answer';
