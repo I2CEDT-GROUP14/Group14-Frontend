@@ -1337,43 +1337,31 @@ function backToCards() {
  * @param {Object} result - The quiz result containing score and question results
  */
 function displayQuizResults(quiz, result) {
-    // ==== helper เล็ก ๆ เพื่อให้เทียบข้อความแม่นขึ้น ====
-    const norm = (s) => (s ?? '').toString().trim().toLowerCase();
-
     // Set the quiz title in the results page
     document.getElementById('resultsQuizTitle').textContent = quiz.title;
-
+    
     // Calculate and display the score
     const correctCount = result.score || 0;
     const totalQuestions = quiz.questions.length;
     const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
-
+    
     document.getElementById('resultsQuizScore').textContent = `Score: ${correctCount}/${totalQuestions}`;
     document.getElementById('scorePercentage').textContent = `${scorePercentage}%`;
-
+    
     // Get the container for displaying questions
     const questionsContainer = document.getElementById('resultsQuestionsContainer');
     questionsContainer.innerHTML = ''; // Clear previous results
-
+    
     // Display each question with correctness
     quiz.questions.forEach((question, index) => {
-        // --- เดิมใช้ตรง ๆ; เพิ่ม normalize ให้กันช่องว่าง/ตัวพิมพ์ ---
-        const rawUserAnswer = userAnswers[question._id] || '';
-        const userAnswer = norm(rawUserAnswer);
-
-        const isCorrect = !!(result.questions.find(q => q._id === question._id)?.isAnswerCorrect);
-
-        const rawCorrectAnswer =
-            typeof question.answer === 'number'
-                ? (question.options[question.answer] ?? '')
-                : (question.answer ?? '');
-
-        const correctAnswer = norm(rawCorrectAnswer);
-
+        const userAnswer = userAnswers[question._id] || '';
+        const isCorrect = result.questions.find(q => q._id === question._id)?.isAnswerCorrect || false;
+        const correctAnswer = question.options[question.answer] || '';
+        
         // Create question card
         const questionCard = document.createElement('div');
         questionCard.className = 'result-question-card';
-
+        
         // Question header with number and status
         const questionHeader = document.createElement('div');
         questionHeader.className = 'result-question-header';
@@ -1381,113 +1369,104 @@ function displayQuizResults(quiz, result) {
             <div class="result-question-number">Question ${index + 1}</div>
             <div class="result-status ${isCorrect ? 'correct' : 'incorrect'}">${isCorrect ? 'Correct' : 'Incorrect'}</div>
         `;
-
+        
         // Question content with text and answers
         const questionContent = document.createElement('div');
         questionContent.className = 'result-question-content';
-
-        // Question text
+        
+        // Question text - using innerHTML to properly parse escaped characters
         const questionText = document.createElement('div');
         questionText.className = 'result-question-text';
-        questionText.innerHTML = question.question;
-
+        questionText.innerHTML = question.question; // Changed from textContent to innerHTML
+        
         // Answers container
         const answersContainer = document.createElement('div');
         answersContainer.className = 'result-answers';
-
+        
         // Add each answer option
         question.options.forEach((option, optIndex) => {
-            const optionNorm = norm(option);
-            const isUserSelected = optionNorm === userAnswer;
-            const isCorrectOption = optionNorm === correctAnswer;
-
+            const isUserSelected = option === userAnswer;
+            const isCorrectOption = option === correctAnswer;
+            
             const answerDiv = document.createElement('div');
             answerDiv.className = 'result-answer';
-
             if (isUserSelected) answerDiv.classList.add('user-selected');
-
-            // ✅ แสดงเฉลย (ไฮไลต์สีเขียว) เฉพาะเมื่อ "ตอบผิด" หรือ "ไม่ได้ตอบ"
-            if (isCorrectOption && !isCorrect) {
-                answerDiv.classList.add('correct-answer');
-            }
-
+            if (isCorrectOption) answerDiv.classList.add('correct-answer');
+            
             // Letter (A, B, C, etc.)
             const letterSpan = document.createElement('span');
             letterSpan.className = 'result-answer-letter';
             letterSpan.textContent = String.fromCharCode(65 + optIndex);
-
+            
             // Answer text
             const textSpan = document.createElement('span');
-            textSpan.innerHTML = option;
-
+            textSpan.innerHTML = option; // Changed from textContent to innerHTML to properly parse escaped characters
+            
             // Icon for correct/incorrect
             const iconSpan = document.createElement('span');
             iconSpan.className = 'result-answer-icon';
-
-            // แสดงไอคอนที่ตัวเลือกผู้ใช้เลือก
+            
             if (isUserSelected) {
                 if (isCorrect) {
-                    iconSpan.innerHTML = `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                        </svg>`;
-                } else {
-                    iconSpan.innerHTML = `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="incorrect-icon">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                        </svg>`;
-                }
-            } else if (isCorrectOption && !isCorrect) {
-                // ถ้าตอบผิดหรือไม่ได้ตอบ ให้ใส่ไอคอนเช็คที่คำตอบที่ถูก
-                iconSpan.innerHTML = `
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
+                    iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                     </svg>`;
+                } else {
+                    iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="incorrect-icon">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>`;
+                }
+            } else if (isCorrectOption && !isCorrect) {
+                // Highlight the correct answer when user selected wrong
+                iconSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="correct-icon">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>`;
             }
-
+            
             answerDiv.appendChild(letterSpan);
             answerDiv.appendChild(textSpan);
             answerDiv.appendChild(iconSpan);
             answersContainer.appendChild(answerDiv);
         });
-
+        
         // Assemble the question card
         questionContent.appendChild(questionText);
         questionContent.appendChild(answersContainer);
-
+        
         questionCard.appendChild(questionHeader);
         questionCard.appendChild(questionContent);
-
+        
         // Add to the results container
         questionsContainer.appendChild(questionCard);
     });
-
+    
     // Setup event listeners for the buttons in the results page
     const retryBtn = document.getElementById('retryQuizBtn');
     const backToCardsBtn = document.getElementById('backToCardsBtn2');
     const backFromResultsBtn = document.getElementById('backToCardsFromResultsBtn');
-
+    
     if (retryBtn) {
         retryBtn.onclick = () => {
             startQuiz(currentQuizId);
         };
     }
-
+    
     if (backToCardsBtn) {
         backToCardsBtn.onclick = backToCards;
     }
-
+    
     if (backFromResultsBtn) {
         backFromResultsBtn.onclick = backToCards;
     }
-
+    
     // Switch to the results page
     switchTab('quiz-results');
 }
+
 
 // ===== Timer Functions =====
 function startTimer() {
