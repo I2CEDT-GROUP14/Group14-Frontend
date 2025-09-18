@@ -1,2 +1,2 @@
-const apiUrl = "http://43.208.255.21:8081";
+const apiUrl = "https://cedt-backend-prod.rachatat.com";
 export { apiUrl };
